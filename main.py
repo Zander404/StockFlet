@@ -55,7 +55,7 @@ class Login(UserControl):
         self.login.width = 630
         self.login.update()
         sleep(0.2)
-        
+
         self.login_box.visible = True
         self.login_box.update()
 
@@ -221,9 +221,8 @@ class MainPage(UserControl):
         sleep(1)
         self.main.width = 620
         self.main.height = 360
-        self.main.update() 
+        self.main.update()
         sleep(0.35)
-
 
         self.main_box.visible = True
         self.main_box.update()
@@ -238,7 +237,6 @@ class MainPage(UserControl):
         self.main.height = 0
         self.main.update()
         sleep(0.75)
-
 
         self.page.controls.remove(self)
 
@@ -305,7 +303,41 @@ class Cashier(UserControl):
             animate=animation.Animation(1000, AnimationCurve.BOUNCE_IN),
         )
 
-        self.cashier_box = Row()
+        self.cashier_box = Row(
+            alignment=MainAxisAlignment.CENTER,
+            vertical_alignment=CrossAxisAlignment.CENTER,
+            spacing=20,
+            opacity=100,
+            animate_opacity=800,
+            visible=True,
+        )
+
+        self.title = Text('Caixa', style=TextStyle(16, weight='bold'))
+
+        self.list_cashier = ListView(expand=True, spacing=10, padding=20)
+
+        self.table_cashier = DataTable(
+            expand=True,
+            border_radius=8,
+            border=border.all(2, TEXT_COLOR),
+            horizontal_lines=BorderSide(1),
+            columns=[
+                DataColumn(Text('ID')),
+                DataColumn(Text('CPF')),
+                DataColumn(Text('NOME')),
+                DataColumn(Text('EMAIL')),
+
+            ],
+        )
+        self.previous = self.btn_cashier("Anterior", lambda x: print("teste"))
+        self.next_btn = self.btn_cashier('Proximo', lambda x: print('teste'))
+        self.btns = Row(
+            alignment=MainAxisAlignment.SPACE_BETWEEN,
+            controls=[
+                self.previous,
+                self.next_btn,
+            ]
+        )
 
         super().__init__()
 
@@ -313,6 +345,11 @@ class Cashier(UserControl):
         self.cashier.width = 630
         self.cashier.height = 360
         self.cashier.update()
+
+        sleep(0.5)
+
+        self.cashier_box.visible = True
+        self.cashier_box.update()
 
     def close_modal(self):
         self.cashier_box.visible = False
@@ -330,8 +367,51 @@ class Cashier(UserControl):
 
         self.main.open_mainpage()
 
+    def btn_cashier(self, label: str, btn_function):
+        return ElevatedButton(
+            content=Text(label, style=TextStyle(
+                size=12, weight='bold', color='white')),
+            on_click=btn_function,
+            color=BTN_COLOR,
+            width=200,
+            height=45,
+            style=ButtonStyle(shape={'': RoundedRectangleBorder(radius=8)})
+
+
+        )
+
+    def teste(self):
+
+        for i in range(100):
+            row = DataRow(
+                cells=[
+                    DataCell(Text(i)),
+                    DataCell(Text("Fulano")),
+                    DataCell(Text("email@email.com")),
+                    DataCell(Text("70724315195")),
+                ]
+            )
+            self.table_cashier.rows.append(row)
 
     def build(self):
+
+        self.teste()
+
+        container = Column(
+            expand=True,
+            horizontal_alignment=CrossAxisAlignment.CENTER,
+            alignment=MainAxisAlignment.CENTER
+        )
+
+        self.list_cashier.controls.append(self.table_cashier)
+        container.controls.append(self.title)
+        container.controls.append(self.list_cashier)
+
+        container.controls.append(self.btns)
+
+        self.cashier_box.controls.append(container)
+
+        self.cashier.content = self.cashier_box
         return self.cashier
 
 
@@ -348,14 +428,12 @@ class Product(UserControl):
 
         self.product_box = Row()
 
-
         self.btn = self.product_btn("Teste", lambda e: (self.back(e)), '1')
 
         super().__init__()
 
     def back(self, e):
         self.close_modal()
-
 
     def open_modal(self):
         self.product.width = 630
@@ -365,7 +443,6 @@ class Product(UserControl):
         sleep(0.2)
         self.product_box.visible = True
         self.product_box.update()
-
 
     def close_modal(self):
         self.product_box.visible = False
@@ -384,7 +461,6 @@ class Product(UserControl):
 
         self.main.open_mainpage()
 
-
     def product_btn(self, label: str, btn_function, icon_selected):
         return ElevatedButton(
             on_click=btn_function,
@@ -395,7 +471,6 @@ class Product(UserControl):
             text=label,
             icon=icon_selected
         )
-
 
     def build(self):
 
@@ -427,7 +502,6 @@ class Order(UserControl):
         self.order_box.visible = True
         self.order_box.update()
 
-
     def close_modal(self):
         self.order_box.visible = False
         self.order_box.update()
@@ -442,7 +516,6 @@ class Order(UserControl):
         self.page.controls.insert(0, self.main)
         self.page.update()
         sleep(0.35)
-
 
     def build(self):
         self.order.content = self.order_box
@@ -465,7 +538,6 @@ def main(page: Page):
     # page.add(mainpage)
     # mainpage.open_mainpage()
 
-    
     cashier = Cashier()
     page.add(cashier)
     cashier.open_modal()
@@ -473,14 +545,12 @@ def main(page: Page):
     # product = Product()
     # page.add(product)
     # product.open_modal()
-    
+
     # order = Order()
     # page.add(order)
     # order.open_modal()
 
     page.update()
-
-
 
 
 if __name__ == '__main__':
