@@ -15,8 +15,8 @@ TEXT_SUB_COLOR = '#ffffff'
 BTN_TXT = ''
 BTN_COLOR = '#6D7CBF'
 
-WIDTH_SCREEN = 630
-HEIGHT_SCREEN = 360
+WIDTH_SCREEN = 1400
+HEIGHT_SCREEN = 640
 
 
 class Login(UserControl):
@@ -74,7 +74,7 @@ class Login(UserControl):
         self.page.controls.remove(self)
         self.main = MainPage()
 
-        self.page.controls.insert(1, self.main)
+        self.page.controls.insert(0, self.main)
         self.page.update()
         sleep(0.35)
 
@@ -220,7 +220,7 @@ class MainPage(UserControl):
         self.close_mainpage(go_to=route_path)
 
     def open_mainpage(self):
-        sleep(1)
+        sleep(0.3)
         self.main.width = WIDTH_SCREEN
         self.main.update()
         sleep(0.35)
@@ -305,6 +305,7 @@ class Cashier(UserControl):
             height=HEIGHT_SCREEN,
             bgcolor=BG_COLOR,
             animate=animation.Animation(550, AnimationCurve.EASE_IN_OUT),
+         
         )
 
         self.cashier_box = Row(
@@ -319,7 +320,7 @@ class Cashier(UserControl):
         self.title = Text('Caixa', style=TextStyle(16, weight='bold'))
 
         self.search_bar = Row(
-            spacing=6,
+            spacing=20,
             vertical_alignment=CrossAxisAlignment.CENTER,
             alignment=MainAxisAlignment.END,
             controls=[
@@ -344,7 +345,21 @@ class Cashier(UserControl):
             ]
         )
 
-        self.search_bar_btn = self.btn_cashier
+
+        self.new_cashier = Column(
+            alignment=MainAxisAlignment.END,
+            horizontal_alignment=CrossAxisAlignment.CENTER,
+            controls=[Row(
+                controls=[
+                    self.btn_cashier("Voltar", lambda x: self.close_modal(), icon=icons.ARROW_BACK_IOS_NEW_OUTLINED),
+                    self.btn_cashier("Adicionar Caixa", lambda x: print("Adicionar Caixa"), icon=icons.PERSON_ADD),
+
+                ],
+                vertical_alignment=CrossAxisAlignment.CENTER,
+                alignment=MainAxisAlignment.SPACE_AROUND,
+            ),]
+
+        )
 
         self.list_cashier = ListView(expand=True, spacing=10, padding=20)
 
@@ -364,19 +379,17 @@ class Cashier(UserControl):
             ]
         )
 
-        self.previous_btn = self.btn_cashier(
-            "Anterior", lambda x: self.move_page("previous"), icon=icons.ARROW_BACK)
-        self.previous_btn.disabled = True
-        self.next_btn = self.btn_cashier(
-            'Próximo', lambda x: self.move_page('next'), icon=icons.ARROW_FORWARD)
         self.btns = Row(
             alignment=MainAxisAlignment.SPACE_AROUND,
             controls=[
-                self.previous_btn,
-                self.next_btn,
+                self.btn_cashier("Anterior", lambda x: self.move_page(
+                    "previous"), icon=icons.ARROW_BACK),
+                self.btn_cashier('Próximo', lambda x: self.move_page(
+                    'next'), icon=icons.ARROW_FORWARD)
             ],
 
         )
+        self.btns.controls[0].disabled = True
 
         super().__init__()
 
@@ -427,12 +440,24 @@ class Cashier(UserControl):
             self.page_number -= 1
 
         if self.page_number <= 0:
+
             self.page_number = 0
-            self.previous_btn.disabled = True
-            self.previous_btn.update()
+            # Previous Btn
+            self.btns.controls[0].disabled = True
+            self.btns.controls[0].update()
+
+        elif self.page_number >= 5:
+            self.btns.controls[1].disabled = True
+            self.btns.controls[1].update()
+
         else:
-            self.previous_btn.disabled = False
-            self.previous_btn.update()
+            # Previous Btn
+            self.btns.controls[0].disabled = False
+            self.btns.controls[0].update()
+
+            # Next Btn
+            self.btns.controls[1].disabled = False
+            self.btns.controls[1].update()
 
         start_index = self.page_size*self.page_number
         final_index = self.page_size+start_index
@@ -443,7 +468,7 @@ class Cashier(UserControl):
             row = DataRow(
                 cells=[
                     DataCell(Text(start_index+i)),
-                    DataCell(Text("70724315195")),
+                    DataCell(Text("12345678910")),
                     DataCell(Text("Fulano")),
                     DataCell(Text("email@email.com")),
                 ]
@@ -461,10 +486,9 @@ class Cashier(UserControl):
                 data.visible = True
                 data.update()
 
-            elif e.data in data.cells[2].content.value.lower():
+            elif e.data.lower() in data.cells[2].content.value.lower():
                 data.visible = True
                 data.update()
-
 
             else:
                 data.visible = False
@@ -484,7 +508,7 @@ class Cashier(UserControl):
             row = DataRow(
                 cells=[
                     DataCell(Text(n+1)),
-                    DataCell(Text("70724315195")),
+                    DataCell(Text("12345678910")),
                     DataCell(Text("Fulano")),
                     DataCell(Text("email@email.com")),
                 ]
@@ -493,6 +517,7 @@ class Cashier(UserControl):
             self.table_cashier.rows.append(row)
 
         container.controls.append(self.title)
+        container.controls.append(self.new_cashier)
         container.controls.append(self.search_bar)
         container.controls.append(self.list_cashier)
 
@@ -507,24 +532,24 @@ class Cashier(UserControl):
 
 class Product(UserControl):
     def __init__(self):
+        
+        self.page_number = 0
+        self.page_size = 30
 
         self.product = Container(
             padding=10,
             width=0,
             height=HEIGHT_SCREEN,
-            bgcolor="green",
+            bgcolor=BG_SUB_COLOR,
             animate=animation.Animation(550, AnimationCurve.EASE_IN_OUT),
         )
 
         self.product_box = Row()
 
         self.btn = self.product_btn("Teste", lambda e: (
-            self.back(e)), icon_selected=icons.ABC)
+            self.close_modal()), icon_selected=icons.ABC)
 
         super().__init__()
-
-    def back(self, e):
-        self.close_modal()
 
     def open_modal(self):
         self.product.width = WIDTH_SCREEN
@@ -540,7 +565,6 @@ class Product(UserControl):
         sleep(0.35)
 
         self.product.width = 0
-        self.product.height = 0
         self.product.update()
         sleep(0.75)
 
@@ -626,13 +650,13 @@ def main(page: Page):
     # page.add(mainpage)
     # mainpage.open_mainpage()
 
-    cashier = Cashier()
-    page.add(cashier)
-    cashier.open_modal()
+    # cashier = Cashier()
+    # page.add(cashier)
+    # cashier.open_modal()
 
-    # product = Product()
-    # page.add(product)
-    # product.open_modal()
+    product = Product()
+    page.add(product)
+    product.open_modal()
 
     # order = Order()
     # page.add(order)
