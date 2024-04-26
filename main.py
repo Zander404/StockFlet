@@ -15,12 +15,15 @@ TEXT_SUB_COLOR = '#ffffff'
 BTN_TXT = ''
 BTN_COLOR = '#6D7CBF'
 
+WIDTH_SCREEN = 630
+HEIGHT_SCREEN = 360
+
 
 class Login(UserControl):
     def __init__(self):
         self.login = Container(
             width=0,
-            height=360,
+            height=HEIGHT_SCREEN,
             bgcolor=BG_COLOR,
             border_radius=8,
             padding=10,
@@ -52,20 +55,19 @@ class Login(UserControl):
         super().__init__()
 
     def open_modal(self):
-        self.login.width = 630
-        self.login.update()
         sleep(0.2)
+        self.login.width = WIDTH_SCREEN
+        self.login.update()
+        sleep(0.5)
 
         self.login_box.visible = True
         self.login_box.update()
 
     def close_modal(self):
-        self.login_box.width = 0
         self.login_box.visible = False
         sleep(0.35)
 
         self.login.width = 0
-        self.login.height = 0
         self.login.update()
         sleep(0.75)
 
@@ -175,10 +177,10 @@ class MainPage(UserControl):
     def __init__(self):
         self.main = Container(
             padding=10,
-            height=0,
             width=0,
+            height=HEIGHT_SCREEN,
             bgcolor=BG_SUB_COLOR,
-            animate=animation.Animation(550, 'easeOutBack'),
+            animate=animation.Animation(550, AnimationCurve.EASE_IN_OUT),
         )
 
         self.main_box = Row(
@@ -219,8 +221,7 @@ class MainPage(UserControl):
 
     def open_mainpage(self):
         sleep(1)
-        self.main.width = 620
-        self.main.height = 360
+        self.main.width = WIDTH_SCREEN
         self.main.update()
         sleep(0.35)
 
@@ -234,7 +235,6 @@ class MainPage(UserControl):
         sleep(0.35)
 
         self.main.width = 0
-        self.main.height = 0
         self.main.update()
         sleep(0.75)
 
@@ -294,13 +294,17 @@ class MainPage(UserControl):
 
 
 class Cashier(UserControl):
+
     def __init__(self):
+        self.page_number = 0
+        self.page_size = 30
+
         self.cashier = Container(
             padding=10,
             width=0,
-            height=0,
+            height=HEIGHT_SCREEN,
             bgcolor=BG_COLOR,
-            animate=animation.Animation(1000, AnimationCurve.BOUNCE_IN),
+            animate=animation.Animation(550, AnimationCurve.EASE_IN_OUT),
         )
 
         self.cashier_box = Row(
@@ -309,10 +313,38 @@ class Cashier(UserControl):
             spacing=20,
             opacity=100,
             animate_opacity=800,
-            visible=True,
+            visible=False,
         )
 
         self.title = Text('Caixa', style=TextStyle(16, weight='bold'))
+
+        self.search_bar = Row(
+            spacing=6,
+            vertical_alignment=CrossAxisAlignment.CENTER,
+            alignment=MainAxisAlignment.END,
+            controls=[
+                TextField(
+                    border_color='transparent',
+                    height=20,
+                    text_size=14,
+                    content_padding=0,
+                    cursor_color='white',
+                    cursor_width=1,
+                    color='white',
+                    hint_text='Pesquisar',
+                    on_change=lambda e: self.filter_data_table(e),
+                ),
+
+                Icon(
+                    name=icons.SEARCH_ROUNDED,
+                    size=17,
+                    opacity=0.85,
+                    color='red10'
+                ),
+            ]
+        )
+
+        self.search_bar_btn = self.btn_cashier
 
         self.list_cashier = ListView(expand=True, spacing=10, padding=20)
 
@@ -326,24 +358,31 @@ class Cashier(UserControl):
                 DataColumn(Text('CPF')),
                 DataColumn(Text('NOME')),
                 DataColumn(Text('EMAIL')),
-
             ],
-        )
-        self.previous = self.btn_cashier("Anterior", lambda x: print("teste"))
-        self.next_btn = self.btn_cashier('Proximo', lambda x: print('teste'))
-        self.btns = Row(
-            alignment=MainAxisAlignment.SPACE_BETWEEN,
-            controls=[
-                self.previous,
-                self.next_btn,
+            rows=[
+
             ]
+        )
+
+        self.previous_btn = self.btn_cashier(
+            "Anterior", lambda x: self.move_page("previous"), icon=icons.ARROW_BACK)
+        self.previous_btn.disabled = True
+        self.next_btn = self.btn_cashier(
+            'Próximo', lambda x: self.move_page('next'), icon=icons.ARROW_FORWARD)
+        self.btns = Row(
+            alignment=MainAxisAlignment.SPACE_AROUND,
+            controls=[
+                self.previous_btn,
+                self.next_btn,
+            ],
+
         )
 
         super().__init__()
 
     def open_modal(self):
-        self.cashier.width = 630
-        self.cashier.height = 360
+        sleep(1)
+        self.cashier.width = WIDTH_SCREEN
         self.cashier.update()
 
         sleep(0.5)
@@ -357,7 +396,6 @@ class Cashier(UserControl):
         sleep(0.35)
 
         self.cashier.width = 0
-        self.cashier.height = 0
         self.cashier.update()
         sleep(0.75)
 
@@ -367,35 +405,72 @@ class Cashier(UserControl):
 
         self.main.open_mainpage()
 
-    def btn_cashier(self, label: str, btn_function):
+    def btn_cashier(self, label: str, btn_function, icon):
         return ElevatedButton(
-            content=Text(label, style=TextStyle(
-                size=12, weight='bold', color='white')),
+            text=label,
+            icon=icon,
             on_click=btn_function,
             color=BTN_COLOR,
             width=200,
-            height=45,
+            height=35,
             style=ButtonStyle(shape={'': RoundedRectangleBorder(radius=8)})
 
 
         )
 
-    def teste(self):
+    def move_page(self, direction: str):
 
-        for i in range(100):
+        if direction == 'next':
+            self.page_number += 1
+
+        elif direction == 'previous':
+            self.page_number -= 1
+
+        if self.page_number <= 0:
+            self.page_number = 0
+            self.previous_btn.disabled = True
+            self.previous_btn.update()
+        else:
+            self.previous_btn.disabled = False
+            self.previous_btn.update()
+
+        start_index = self.page_size*self.page_number
+        final_index = self.page_size+start_index
+
+        self.table_cashier.rows.clear()
+
+        for i in range(self.page_size):
             row = DataRow(
                 cells=[
-                    DataCell(Text(i)),
+                    DataCell(Text(start_index+i)),
+                    DataCell(Text("70724315195")),
                     DataCell(Text("Fulano")),
                     DataCell(Text("email@email.com")),
-                    DataCell(Text("70724315195")),
                 ]
             )
             self.table_cashier.rows.append(row)
 
-    def build(self):
+        self.table_cashier.update()
 
-        self.teste()
+    def filter_data_table(self, e):
+        print(self.search_bar.controls[0].value)
+
+        for data in self.cashier_box.controls[0].controls[2].controls[0].rows[:]:
+
+            if e.data in data.cells[1].content.value:
+                data.visible = True
+                data.update()
+
+            elif e.data in data.cells[2].content.value.lower():
+                data.visible = True
+                data.update()
+
+
+            else:
+                data.visible = False
+                data.update()
+
+    def build(self):
 
         container = Column(
             expand=True,
@@ -404,7 +479,21 @@ class Cashier(UserControl):
         )
 
         self.list_cashier.controls.append(self.table_cashier)
+
+        for n in range(self.page_size):
+            row = DataRow(
+                cells=[
+                    DataCell(Text(n+1)),
+                    DataCell(Text("70724315195")),
+                    DataCell(Text("Fulano")),
+                    DataCell(Text("email@email.com")),
+                ]
+            )
+
+            self.table_cashier.rows.append(row)
+
         container.controls.append(self.title)
+        container.controls.append(self.search_bar)
         container.controls.append(self.list_cashier)
 
         container.controls.append(self.btns)
@@ -412,6 +501,7 @@ class Cashier(UserControl):
         self.cashier_box.controls.append(container)
 
         self.cashier.content = self.cashier_box
+
         return self.cashier
 
 
@@ -421,14 +511,15 @@ class Product(UserControl):
         self.product = Container(
             padding=10,
             width=0,
-            height=0,
+            height=HEIGHT_SCREEN,
             bgcolor="green",
-            animate=animation.Animation(550, AnimationCurve.BOUNCE_IN),
+            animate=animation.Animation(550, AnimationCurve.EASE_IN_OUT),
         )
 
         self.product_box = Row()
 
-        self.btn = self.product_btn("Teste", lambda e: (self.back(e)), '1')
+        self.btn = self.product_btn("Teste", lambda e: (
+            self.back(e)), icon_selected=icons.ABC)
 
         super().__init__()
 
@@ -436,8 +527,7 @@ class Product(UserControl):
         self.close_modal()
 
     def open_modal(self):
-        self.product.width = 630
-        self.product.height = 360
+        self.product.width = WIDTH_SCREEN
         self.product.update()
 
         sleep(0.2)
@@ -484,9 +574,9 @@ class Order(UserControl):
         self.order = Container(
             padding=10,
             width=0,
-            height=0,
+            height=HEIGHT_SCREEN,
             bgcolor="yellow",
-            animate=animation.Animation(550, AnimationCurve.BOUNCE_IN),
+            animate=animation.Animation(550, AnimationCurve.EASE_IN_OUT),
         )
 
         self.order_box = Row()
@@ -494,8 +584,7 @@ class Order(UserControl):
         super().__init__()
 
     def open_modal(self):
-        self.order.width = 630
-        self.order.height = 360
+        self.order.width = WIDTH_SCREEN
         self.order.update()
 
         sleep(0.2)
@@ -508,7 +597,6 @@ class Order(UserControl):
         sleep(0.75)
 
         self.order.width = 0
-        self.order.height = 0
         self.order.update()
         sleep(0.35)
 
