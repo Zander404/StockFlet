@@ -460,7 +460,6 @@ class Cashier(UserControl):
             self.btns.controls[1].update()
 
         start_index = self.page_size*self.page_number
-        final_index = self.page_size+start_index
 
         self.table_cashier.rows.clear()
 
