@@ -3,6 +3,7 @@ import flet
 from flet import *
 import requests
 from time import sleep
+import asyncio
 
 BG_COLOR = '#252A41'
 BG_SUB_COLOR = '#1E2757'
@@ -17,6 +18,10 @@ BTN_COLOR = '#6D7CBF'
 
 WIDTH_SCREEN = 1400
 HEIGHT_SCREEN = 640
+
+
+# Back end
+url: str = 'http://localhost:8000/api/v1'
 
 
 class Login(UserControl):
@@ -51,6 +56,9 @@ class Login(UserControl):
 
         self.login_btn = self.login_button(
             "Logar", lambda e: self.authentication(e))
+
+        self.wait = ProgressRing(
+            width=24, height=24, stroke_width=5, visible=False)
 
         super().__init__()
 
@@ -119,19 +127,21 @@ class Login(UserControl):
         )
 
     def authentication(self, e):
-
         try:
 
             self.error_message.visible = False
             self.login_box.update()
+            # TODO Arrumar esse Load
+            self.wait.visible = True
+            self.wait.update()
 
             email = self.login_email.value
             password = self.login_password.value
 
-            # TODO
-            # data = requests.post('https://localhost:8000/api/login/', data=[email, password])
-
-            if email == "sim" and password == "sim":
+            data = requests.post('http://localhost:8000/api/v1/login',
+                                 json={'username': email, 'password': password})
+            print(data)
+            if data.status_code == 200:
                 self.close_modal()
             else:
                 raise Exception("Senha Inválida")
@@ -157,6 +167,8 @@ class Login(UserControl):
             self.error_message,
             Divider(height=2, color='transparent'),
             self.login_btn,
+            Divider(height=2, color='transparent'),
+            self.wait
         ]
 
         columns = Column(
@@ -298,7 +310,7 @@ class Cashier(UserControl):
 
     def __init__(self):
         self.page_number = 0
-        self.page_size = 30
+        self.page_size = 10
 
         self.cashier = Container(
             padding=10,
@@ -353,7 +365,8 @@ class Cashier(UserControl):
                 controls=[
                     self.btn_cashier("Voltar", lambda x: self.close_modal(
                     ), icon=icons.ARROW_BACK_IOS_NEW_OUTLINED),
-                    self.btn_cashier("Adicionar Caixa", lambda e: self.open_dlg() , icon=icons.PERSON_ADD),
+                    self.btn_cashier(
+                        "Adicionar Caixa", lambda e: self.open_dlg(), icon=icons.PERSON_ADD),
 
                 ],
                 vertical_alignment=CrossAxisAlignment.CENTER,
@@ -473,7 +486,7 @@ class Cashier(UserControl):
             self.btns.controls[0].disabled = True
             self.btns.controls[0].update()
 
-        elif self.page_number >= 5:
+        elif self.page_number > 10:
             self.btns.controls[1].disabled = True
             self.btns.controls[1].update()
 
@@ -486,20 +499,28 @@ class Cashier(UserControl):
             self.btns.controls[1].disabled = False
             self.btns.controls[1].update()
 
-        start_index = self.page_size*self.page_number
+        try:
+            response = requests.get(f'http://localhost:8000/api/v1/users/?limit={
+                                    self.page_size}&offset={self.page_size*self.page_number}')
+            data = response.json()['items']
 
-        self.table_cashier.rows.clear()
+            print(data)
 
-        for i in range(self.page_size):
-            row = DataRow(
-                cells=[
-                    DataCell(Text(start_index+i)),
-                    DataCell(Text("12345678910")),
-                    DataCell(Text("Fulano")),
-                    DataCell(Text("email@email.com")),
-                ]
-            )
-            self.table_cashier.rows.append(row)
+            self.table_cashier.rows.clear()
+
+            for n in range(len(data)):
+                row = DataRow(
+                    cells=[
+                        DataCell(Text(n)),
+                        DataCell(Text('Identificador')),
+                        DataCell(Text(data[n]["nome"])),
+                        DataCell(Text(data[n]['email'])),
+                    ]
+                )
+                self.table_cashier.rows.append(row)
+        except:
+            # TODO Criar um except desentes
+            print('erro')
 
         self.table_cashier.update()
 
@@ -544,18 +565,24 @@ class Cashier(UserControl):
         )
 
         self.list_cashier.controls.append(self.table_cashier)
+        try:
+            response = requests.get(f'http://localhost:8000/api/v1/users/?limit={
+                                    self.page_size}&offset={self.page_number*self.page_size}')
+            data = response.json()['items']
+            print(data)
+            for n in range(len(data)):
+                row = DataRow(
+                    cells=[
+                        DataCell(Text(n+1)),
+                        DataCell(Text("Identificador")),
+                        DataCell(Text(data[n]["nome"])),
+                        DataCell(Text(data[n]["email"])),
+                    ]
+                )
 
-        for n in range(self.page_size):
-            row = DataRow(
-                cells=[
-                    DataCell(Text(n+1)),
-                    DataCell(Text("12345678910")),
-                    DataCell(Text("Fulano")),
-                    DataCell(Text("email@email.com")),
-                ]
-            )
-
-            self.table_cashier.rows.append(row)
+                self.table_cashier.rows.append(row)
+        except:
+            print('testes')
 
         container.controls.append(self.title)
         container.controls.append(self.new_cashier)
@@ -576,7 +603,7 @@ class Product(UserControl):
     def __init__(self):
 
         self.page_number = 0
-        self.page_size = 30
+        self.page_size = 2
 
         self.product = Container(
             padding=10,
@@ -728,23 +755,30 @@ class Product(UserControl):
             self.btns.controls[1].disabled = False
             self.btns.controls[1].update()
 
-        start_index = self.page_size*self.page_number
+        try:
+            response = requests.get(f'http://localhost:8000/api/v1/products/?limit={
+                                    self.page_size}&offset={self.page_size*self.page_number}')
+            data = response.json()['items']
 
-        self.product_view.controls[0].rows.clear()
+            print(data)
 
-        for i in range(self.page_size):
-            row = DataRow(
-                cells=[
-                    DataCell(Text(start_index+i)),
-                    DataCell(Text("Carro")),
-                    DataCell(Text('4 portas')),
-                    DataCell(Text('R$ 100',)),
-                    DataCell(Text('1000 und')),
-                ]
-            )
-            self.product_view.controls[0].rows.append(row)
+            self.product_view.controls[0].rows.clear()
 
-        self.product_view.update()
+            for n in range(len(data)):
+                row = DataRow(
+                    cells=[
+                        DataCell(Text(data[n]["barCode"])),
+                        DataCell(Text(data[n]['title'])),
+                        DataCell(Text(data[n]["observation"])),
+                        DataCell(Text(data[n]["price"])),
+                        DataCell(Text(data[n]["stock"])),
+                    ]
+                )
+                self.product_view.controls[0].rows.append(row)
+
+            self.product_view.update()
+        except:
+            print('Erro')
 
     def open_dlg(self):
         self.dlg_modal.open = True
@@ -775,18 +809,27 @@ class Product(UserControl):
         container.controls.append(self.btns)
         container.controls.append(self.dlg_modal)
 
-        for i in range(self.page_size):
-            row = DataRow(
-                cells=[
-                    DataCell(Text(i+1)),
-                    DataCell(Text("Carro")),
-                    DataCell(Text('4 portas')),
-                    DataCell(Text('R$ 100',)),
-                    DataCell(Text('1000 und')),
-                ]
-            )
+        try:
+            response = requests.get(f'{url}/products/?limit={
+                                    self.page_size}&offset={self.page_number*self.page_size}')
+            data = response.json()['items']
+            print(data)
 
-            self.product_view.controls[0].rows.append(row)
+            for n in range(self.page_size):
+                row = DataRow(
+                    cells=[
+                        DataCell(Text(data[n]['barCode'])),
+                        DataCell(Text(data[n]["title"])),
+                        DataCell(Text(data[n]['observation'])),
+                        DataCell(Text(data[n]['price'])),
+                        DataCell(Text(data[n]["stock"])),
+                    ]
+                )
+
+                self.product_view.controls[0].rows.append(row)
+
+        except:
+            print("Erro")
 
         self.product_box.controls.append(container)
         self.product.content = self.product_box
@@ -796,7 +839,7 @@ class Product(UserControl):
 class Order(UserControl):
     def __init__(self):
 
-        self.page_size: int = 30
+        self.page_size: int = 10
         self.page_number: int = 0
 
         self.order = Container(
@@ -956,19 +999,27 @@ class Order(UserControl):
 
         self.order_list.controls[0].rows.clear()
 
-        for i in range(self.page_size):
-            row = DataRow(
-                cells=[
-                    DataCell(Text(start_index+i)),
-                    DataCell(Text("12/01/01")),
-                    DataCell(Text('Carlos')),
-                    DataCell(Text('Almeida')),
-                    DataCell(Text('R$ 100',)),
-                    DataCell(Text('1000 und')),
-                ]
-            )
+        try:
+            response = requests.get(
+                f'{url}/orders/?limit={self.page_size}&offset={self.page_number*self.page_size}')
+            data = response.json()['items']
+            print(data)
 
-            self.order_list.controls[0].rows.append(row)
+            for n in range(len(data)):
+                row = DataRow(
+                    cells=[
+                        DataCell(Text(n)),
+                        DataCell(Text(data[n]['date_time'])),
+                        DataCell(Text(data[n]['client'])),
+                        DataCell(Text(data[n]['cashier'])),
+                        DataCell(Text(data[n]['payment'])),
+                        DataCell(Text(data[n]['order_items'])),
+                    ]
+                )
+
+                self.order_list.controls[0].rows.append(row)
+        except:
+            print('Erro')
 
         self.order_list.update()
 
@@ -988,8 +1039,6 @@ class Order(UserControl):
         self.order_box.update()
 
     def build(self):
-        self.page_size: int = 30
-        self.page_number: int = 0
 
         container = Column(
             expand=True,
@@ -1001,20 +1050,25 @@ class Order(UserControl):
         container.controls.append(self.new_order)
         container.controls.append(self.order_list)
         # container.controls
-
-        for i in range(self.page_size):
-            row = DataRow(
-                cells=[
-                    DataCell(Text(i+1)),
-                    DataCell(Text("12/01/01")),
-                    DataCell(Text('Carlos')),
-                    DataCell(Text('Almeida')),
-                    DataCell(Text('R$ 100',)),
-                    DataCell(Text('1000 und')),
-                ]
-            )
-            self.order_list.controls[0].rows.append(row)
-
+        try:
+            response = requests.get(
+                f'{url}/orders/?limit={self.page_size}&offset={self.page_number*self.page_size}')
+            data = response.json()['items']
+            print(data)
+            for n in range(len(data)):
+                row = DataRow(
+                    cells=[
+                        DataCell(Text(n)),
+                        DataCell(Text(data[n]['date_time'])),
+                        DataCell(Text(data[n]['client'])),
+                        DataCell(Text(data[n]['cashier'])),
+                        DataCell(Text(data[n]['payment'])),
+                        DataCell(Text(data[n]['order_items'])),
+                    ]
+                )
+                self.order_list.controls[0].rows.append(row)
+        except:
+            print("Erro")
         container.controls.append(self.dlg_modal)
         container.controls.append(self.btns)
         self.order_box.controls.append(container)
@@ -1029,7 +1083,6 @@ def main(page: Page):
 
     # login = Login()
     # page.add(login)
-    # page.update()
     # login.open_modal()
 
     # Class
@@ -1038,17 +1091,17 @@ def main(page: Page):
     # page.add(mainpage)
     # mainpage.open_mainpage()
 
-    cashier = Cashier()
-    page.add(cashier)
-    cashier.open_modal()
+    # cashier = Cashier()
+    # page.add(cashier)
+    # cashier.open_modal()
 
     # product = Product()
     # page.add(product)
     # product.open_modal()
 
-    # order = Order()
-    # page.add(order)
-    # order.open_modal()
+    order = Order()
+    page.add(order)
+    order.open_modal()
 
     page.update()
 
