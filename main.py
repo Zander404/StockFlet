@@ -1081,9 +1081,9 @@ def main(page: Page):
     page.horizontal_alignment = 'center'
     page.vertical_alignment = 'center'
 
-    # login = Login()
-    # page.add(login)
-    # login.open_modal()
+    login = Login()
+    page.add(login)
+    login.open_modal()
 
     # Class
 
@@ -1099,9 +1099,9 @@ def main(page: Page):
     # page.add(product)
     # product.open_modal()
 
-    order = Order()
-    page.add(order)
-    order.open_modal()
+    # order = Order()
+    # page.add(order)
+    # order.open_modal()
 
     page.update()
 
