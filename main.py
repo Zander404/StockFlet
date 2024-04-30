@@ -684,7 +684,6 @@ class Product(UserControl):
         self.main = MainPage()
         self.page.controls.insert(0, self.main)
 
-        print(self.page.controls)
         self.page.update()
         sleep(0.35)
 
