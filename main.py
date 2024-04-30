@@ -353,8 +353,7 @@ class Cashier(UserControl):
                 controls=[
                     self.btn_cashier("Voltar", lambda x: self.close_modal(
                     ), icon=icons.ARROW_BACK_IOS_NEW_OUTLINED),
-                    self.btn_cashier("Adicionar Caixa", lambda x: print(
-                        "Adicionar Caixa"), icon=icons.PERSON_ADD),
+                    self.btn_cashier("Adicionar Caixa", lambda e: self.open_dlg() , icon=icons.PERSON_ADD),
 
                 ],
                 vertical_alignment=CrossAxisAlignment.CENTER,
@@ -392,6 +391,29 @@ class Cashier(UserControl):
 
         )
         self.btns.controls[0].disabled = True
+
+        # Modal
+        self.cashier_dlg_items = Column(controls=[
+            TextField(label="CPF"),
+            TextField(label="NOME"),
+            TextField(label="EMAIL"),
+            TextField(label="SENHA"),
+            TextField(label="CONFIRMAR SENHA"),
+        ],
+        )
+
+        self.dlg_modal = AlertDialog(
+            modal=True,
+            title=Text("Adicionar Produto"),
+            content=self.cashier_dlg_items,
+            actions=[
+                TextButton("Voltar", on_click=lambda e: self.close_dlg()),
+                TextButton("Salvar", on_click=lambda e: self.save_cashier_dlg(
+                    self.cashier_dlg_items.controls[:])),
+            ],
+            actions_alignment=MainAxisAlignment.CENTER,
+            on_dismiss=lambda e: print("Modal dialog dismissed!"),
+        )
 
         super().__init__()
 
@@ -498,6 +520,21 @@ class Cashier(UserControl):
                 data.visible = False
                 data.update()
 
+    def open_dlg(self):
+        self.dlg_modal.open = True
+        self.cashier_box.update()
+
+    def close_dlg(self):
+        self.dlg_modal.open = False
+        self.cashier_box.update()
+
+    def save_cashier_dlg(self, items):
+        for i in items:
+            print(i.value)
+
+        self.dlg_modal.open = False
+        self.cashier_box.update()
+
     def build(self):
 
         container = Column(
@@ -522,10 +559,11 @@ class Cashier(UserControl):
 
         container.controls.append(self.title)
         container.controls.append(self.new_cashier)
-        container.controls.append(self.search_bar)
+        # container.controls.append(self.search_bar)
         container.controls.append(self.list_cashier)
 
         container.controls.append(self.btns)
+        container.controls.append(self.dlg_modal)
 
         self.cashier_box.controls.append(container)
 
@@ -563,8 +601,8 @@ class Product(UserControl):
             controls=[
                 self.product_btn('Voltar', lambda e: self.close_modal(
                 ), icon_selected=icons.ARROW_BACK_IOS),
-                self.product_btn('Adicionar', lambda e: print(
-                    'Adicionar produto'), icon_selected=icons.NOTE_ADD)
+                self.product_btn(
+                    'Adicionar', lambda e: self.open_dlg(), icon_selected=icons.NOTE_ADD)
             ],
             vertical_alignment=CrossAxisAlignment.CENTER,
             alignment=MainAxisAlignment.SPACE_AROUND,
@@ -598,6 +636,29 @@ class Product(UserControl):
 
         )
         self.btns.controls[0].disabled = True
+
+        # Modal
+        self.product_dlg_items = Column(controls=[
+            TextField(label="Código de Barras"),
+            TextField(label="Produto"),
+            TextField(label="Observações"),
+            TextField(label="Preço"),
+            TextField(label="Estoque"),
+        ],
+        )
+
+        self.dlg_modal = AlertDialog(
+            modal=True,
+            title=Text("Adicionar Produto"),
+            content=self.product_dlg_items,
+            actions=[
+                TextButton("Voltar", on_click=lambda e: self.close_dlg()),
+                TextButton("Salvar", on_click=lambda e: self.save_product_dlg(
+                    self.product_items.controls[:])),
+            ],
+            actions_alignment=MainAxisAlignment.CENTER,
+            on_dismiss=lambda e: print("Modal dialog dismissed!"),
+        )
 
         super().__init__()
 
@@ -686,6 +747,21 @@ class Product(UserControl):
 
         self.product_view.update()
 
+    def open_dlg(self):
+        self.dlg_modal.open = True
+        self.product_box.update()
+
+    def close_dlg(self):
+        self.dlg_modal.open = False
+        self.product_box.update()
+
+    def save_product_dlg(self, items):
+        for i in items:
+            print(i.value)
+
+        self.dlg_modal.open = False
+        self.order_box.update()
+
     def build(self):
 
         container = Column(
@@ -698,6 +774,7 @@ class Product(UserControl):
         container.controls.append(self.new_product)
         container.controls.append(self.product_view)
         container.controls.append(self.btns)
+        container.controls.append(self.dlg_modal)
 
         for i in range(self.page_size):
             row = DataRow(
@@ -749,8 +826,8 @@ class Order(UserControl):
             controls=[
                 self.order_btn("Voltar", lambda e:  self.close_modal(),
                                icon_selected=icons.ARROW_BACK),
-                self.order_btn('Adicionar', lambda e: print(
-                    'Adicionar Pedido'), icon_selected=icons.ADD_CARD)
+                self.order_btn('Adicionar', lambda e: self.open_dlg(),
+                               icon_selected=icons.ADD_CARD)
             ],
         )
 
@@ -791,6 +868,29 @@ class Order(UserControl):
         )
 
         self.btns.controls[0].disabled = True
+
+        # Modal
+        self.order_dlg_items = Column(controls=[
+            TextField(label="Dia da Compra "),
+            TextField(label="Cliente"),
+            TextField(label="Caixa"),
+            TextField(label="Pagamento"),
+            TextField(label="Produtos"),
+        ],
+        )
+
+        self.dlg_modal = AlertDialog(
+            modal=True,
+            title=Text("Adicionar Pedido"),
+            content=self.order_dlg_items,
+            actions=[
+                TextButton("Voltar", on_click=lambda e: self.close_dlg()),
+                TextButton("Salvar", on_click=lambda e: self.save_order_dlg(
+                    self.order_dlg_items.controls[:])),
+            ],
+            actions_alignment=MainAxisAlignment.CENTER,
+            on_dismiss=lambda e: print("Modal dialog dismissed!"),
+        )
 
         super().__init__()
 
@@ -872,7 +972,21 @@ class Order(UserControl):
             self.order_list.controls[0].rows.append(row)
 
         self.order_list.update()
-        
+
+    def open_dlg(self):
+        self.dlg_modal.open = True
+        self.order_box.update()
+
+    def close_dlg(self):
+        self.dlg_modal.open = False
+        self.order_box.update()
+
+    def save_order_dlg(self, items):
+        for i in items:
+            print(i.value)
+
+        self.dlg_modal.open = False
+        self.order_box.update()
 
     def build(self):
         self.page_size: int = 30
@@ -887,6 +1001,7 @@ class Order(UserControl):
         container.controls.append(self.title)
         container.controls.append(self.new_order)
         container.controls.append(self.order_list)
+        # container.controls
 
         for i in range(self.page_size):
             row = DataRow(
@@ -901,6 +1016,7 @@ class Order(UserControl):
             )
             self.order_list.controls[0].rows.append(row)
 
+        container.controls.append(self.dlg_modal)
         container.controls.append(self.btns)
         self.order_box.controls.append(container)
         self.order.content = self.order_box
@@ -923,17 +1039,17 @@ def main(page: Page):
     # page.add(mainpage)
     # mainpage.open_mainpage()
 
-    # cashier = Cashier()
-    # page.add(cashier)
-    # cashier.open_modal()
+    cashier = Cashier()
+    page.add(cashier)
+    cashier.open_modal()
 
     # product = Product()
     # page.add(product)
     # product.open_modal()
 
-    order = Order()
-    page.add(order)
-    order.open_modal()
+    # order = Order()
+    # page.add(order)
+    # order.open_modal()
 
     page.update()
 
