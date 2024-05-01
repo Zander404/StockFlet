@@ -154,9 +154,11 @@ class Login(UserControl):
             self.login_password.border_color = 'red'
 
             self.error_message.visible = True
-            self.login_box.update()
+            self.wait.visible = False
 
+            self.login_box.update()
             self.error_message.update()
+            self.wait.update()
 
     def build(self):
         texts: list = [
@@ -311,6 +313,7 @@ class Cashier(UserControl):
     def __init__(self):
         self.page_number = 0
         self.page_size = 10
+        self.edit = False
 
         self.cashier = Container(
             padding=10,
@@ -383,7 +386,6 @@ class Cashier(UserControl):
             border=border.all(2, TEXT_COLOR),
             horizontal_lines=BorderSide(1),
             columns=[
-                DataColumn(Text('ID')),
                 DataColumn(Text('CPF')),
                 DataColumn(Text('NOME')),
                 DataColumn(Text('EMAIL')),
@@ -417,12 +419,12 @@ class Cashier(UserControl):
 
         self.dlg_modal = AlertDialog(
             modal=True,
-            title=Text("Adicionar Produto"),
+            title=Text("Adicionar Caixa"),
             content=self.cashier_dlg_items,
             actions=[
                 TextButton("Voltar", on_click=lambda e: self.close_dlg()),
-                TextButton("Salvar", on_click=lambda e: self.save_cashier_dlg(
-                    self.cashier_dlg_items.controls[:])),
+                TextButton("Salvar", on_click=lambda e: [self.save_cashier_dlg(
+                    self.cashier_dlg_items.controls[:]) if self.edit == False else self.edit_cashier_dlg(self.cashier_dlg_items.controls[:])]),
             ],
             actions_alignment=MainAxisAlignment.CENTER,
             on_dismiss=lambda e: print("Modal dialog dismissed!"),
@@ -501,7 +503,7 @@ class Cashier(UserControl):
 
         try:
             response = requests.get(f'http://localhost:8000/api/v1/users/?limit={
-                                    self.page_size}&offset={self.page_size*self.page_number}')
+                self.page_size}&offset={self.page_size*self.page_number}')
             data = response.json()['items']
 
             print(data)
@@ -511,11 +513,12 @@ class Cashier(UserControl):
             for n in range(len(data)):
                 row = DataRow(
                     cells=[
-                        DataCell(Text(n)),
-                        DataCell(Text('Identificador')),
+                        DataCell(Text(data[n]['cpf'])),
                         DataCell(Text(data[n]["nome"])),
                         DataCell(Text(data[n]['email'])),
-                    ]
+                    ],
+                    on_long_press=lambda x: self.open_dlg(
+                        data=[data[n]['cpf'], data[n]["nome"], data[n]["email"]], edit=True)
                 )
                 self.table_cashier.rows.append(row)
         except:
@@ -541,7 +544,18 @@ class Cashier(UserControl):
                 data.visible = False
                 data.update()
 
-    def open_dlg(self):
+    def open_dlg(self, data=['', '', '', '', ''], edit: bool = False):
+
+        if edit == True:
+            self.edit = True
+
+        else:
+            self.edit = False
+
+        self.dlg_modal.content.controls[0].value = data[0]
+        self.dlg_modal.content.controls[1].value = data[1]
+        self.dlg_modal.content.controls[2].value = data[2]
+
         self.dlg_modal.open = True
         self.cashier_box.update()
 
@@ -550,11 +564,35 @@ class Cashier(UserControl):
         self.cashier_box.update()
 
     def save_cashier_dlg(self, items):
-        for i in items:
-            print(i.value)
+        try:
+            response = requests.post(f'{url}/user/', json={"cpf": int(
+                items[0].value), "nome": items[1].value, 'email': items[2].value, 'password': items[3].value})
+            if response.status_code == 201:
+                self.dlg_modal.open = False
+                self.cashier_box.update()
 
-        self.dlg_modal.open = False
-        self.cashier_box.update()
+            else:
+                print(response)
+                print(response.status_code)
+                print("Problema no envio")
+        except Exception as e:
+            print(e)
+
+    def edit_cashier_dlg(self, items):
+        print("EDIT")
+        try:
+            response = requests.put(f'{url}/user/?id={items[0].value}', json={
+                                    "cpf": items[0].value, "nome": items[1].value, 'email': items[2].value, 'password': items[3].value})
+            if response.status_code == 202:
+                self.dlg_modal.open = False
+                self.cashier_box.update()
+
+            else:
+                print(response)
+                print(response.status_code)
+                print("Problema no envio")
+        except Exception as e:
+            print(e)
 
     def build(self):
 
@@ -567,17 +605,18 @@ class Cashier(UserControl):
         self.list_cashier.controls.append(self.table_cashier)
         try:
             response = requests.get(f'http://localhost:8000/api/v1/users/?limit={
-                                    self.page_size}&offset={self.page_number*self.page_size}')
+                self.page_size}&offset={self.page_number*self.page_size}')
             data = response.json()['items']
             print(data)
             for n in range(len(data)):
                 row = DataRow(
                     cells=[
-                        DataCell(Text(n+1)),
-                        DataCell(Text("Identificador")),
+                        DataCell(Text(data[n]['cpf'])),
                         DataCell(Text(data[n]["nome"])),
                         DataCell(Text(data[n]["email"])),
-                    ]
+                    ],
+                    on_long_press=lambda x: self.open_dlg(
+                        data=[data[n]['cpf'], data[n]["nome"], data[n]["email"]], edit=True)
                 )
 
                 self.table_cashier.rows.append(row)
@@ -604,6 +643,7 @@ class Product(UserControl):
 
         self.page_number = 0
         self.page_size = 2
+        self.edit = False
 
         self.product = Container(
             padding=10,
@@ -681,7 +721,7 @@ class Product(UserControl):
             actions=[
                 TextButton("Voltar", on_click=lambda e: self.close_dlg()),
                 TextButton("Salvar", on_click=lambda e: self.save_product_dlg(
-                    self.product_items.controls[:])),
+                    self.product_dlg_items.controls[:]) if self.edit == False else self.edit_product_dlg(self.product_dlg_items.controls[:])),
             ],
             actions_alignment=MainAxisAlignment.CENTER,
             on_dismiss=lambda e: print("Modal dialog dismissed!"),
@@ -757,7 +797,7 @@ class Product(UserControl):
 
         try:
             response = requests.get(f'http://localhost:8000/api/v1/products/?limit={
-                                    self.page_size}&offset={self.page_size*self.page_number}')
+                self.page_size}&offset={self.page_size*self.page_number}')
             data = response.json()['items']
 
             print(data)
@@ -772,7 +812,9 @@ class Product(UserControl):
                         DataCell(Text(data[n]["observation"])),
                         DataCell(Text(data[n]["price"])),
                         DataCell(Text(data[n]["stock"])),
-                    ]
+                    ],
+                    on_long_press=lambda x: self.open_dlg(
+                        data=[data[n]['barCode'], data[n]["title"], data[n]["observation"], data[n]["price"], data[n]["stock"]], edit=True)
                 )
                 self.product_view.controls[0].rows.append(row)
 
@@ -780,7 +822,20 @@ class Product(UserControl):
         except:
             print('Erro')
 
-    def open_dlg(self):
+    def open_dlg(self,  data=['', '', '', '', ''], edit: bool = False):
+
+        if edit == True:
+            self.edit = True
+
+        else:
+            self.edit = False
+
+        self.dlg_modal.content.controls[0].value = data[0]
+        self.dlg_modal.content.controls[1].value = data[1]
+        self.dlg_modal.content.controls[2].value = data[2]
+        self.dlg_modal.content.controls[3].value = data[3]
+        self.dlg_modal.content.controls[4].value = data[4]
+
         self.dlg_modal.open = True
         self.product_box.update()
 
@@ -789,11 +844,46 @@ class Product(UserControl):
         self.product_box.update()
 
     def save_product_dlg(self, items):
-        for i in items:
-            print(i.value)
+        print(items[0].value)
+        print(items[1].value)
+        print(items[2].value)
+        print(items[3].value)
+        print(items[4].value)
+        try:
+            response = requests.post(f'{url}/product/', json={"barCode": 
+                items[0].value, "title": items[1].value, 'observation': items[2].value, 'price': items[3].value, 'stock': items[4].value})
+            if response.status_code == 201:
+                self.dlg_modal.open = False
+                self.product_box.update()
 
-        self.dlg_modal.open = False
-        self.order_box.update()
+            else:
+                print(response)
+                print(response.status_code)
+                print("Problema no envio")
+        except Exception as e:
+            print(e)
+
+    def edit_product_dlg(self, items):
+        print('EDIT')
+        print(items[0].value)
+        print(items[1].value)
+        print(items[2].value)
+        print(items[3].value)
+        print(items[4].value)
+        try:
+            response = requests.put(f'{url}/product/{items[0].value}', json={"barCode": 
+                int(items[0].value), "title": items[1].value, 'observation': items[2].value, 'price': float(items[3].value), 'stock': int(items[4].value)})
+            if response.status_code == 202:
+                self.dlg_modal.open = False
+                self.product_box.update()
+
+            else:
+                print(response)
+                print(response.status_code)
+                print("Problema no envio")
+        except Exception as e:
+            print(e)
+
 
     def build(self):
 
@@ -811,7 +901,7 @@ class Product(UserControl):
 
         try:
             response = requests.get(f'{url}/products/?limit={
-                                    self.page_size}&offset={self.page_number*self.page_size}')
+                self.page_size}&offset={self.page_number*self.page_size}')
             data = response.json()['items']
             print(data)
 
@@ -823,7 +913,9 @@ class Product(UserControl):
                         DataCell(Text(data[n]['observation'])),
                         DataCell(Text(data[n]['price'])),
                         DataCell(Text(data[n]["stock"])),
-                    ]
+                    ],
+                    on_long_press=lambda x: self.open_dlg(
+                        data=[data[n]['barCode'], data[n]["title"], data[n]["observation"], data[n]["price"], data[n]["stock"]], edit=True)
                 )
 
                 self.product_view.controls[0].rows.append(row)
@@ -1081,9 +1173,9 @@ def main(page: Page):
     page.horizontal_alignment = 'center'
     page.vertical_alignment = 'center'
 
-    login = Login()
-    page.add(login)
-    login.open_modal()
+    # login = Login()
+    # page.add(login)
+    # login.open_modal()
 
     # Class
 
@@ -1095,9 +1187,9 @@ def main(page: Page):
     # page.add(cashier)
     # cashier.open_modal()
 
-    # product = Product()
-    # page.add(product)
-    # product.open_modal()
+    product = Product()
+    page.add(product)
+    product.open_modal()
 
     # order = Order()
     # page.add(order)
